@@ -1,51 +1,41 @@
-// Описаний в документації
-import flatpickr from "flatpickr";
-// Додатковий імпорт стилів
-import "flatpickr/dist/flatpickr.min.css";
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
 
-// Описаний у документації
-import iziToast from "izitoast";
-// Додатковий імпорт стилів
-import "izitoast/dist/css/iziToast.min.css";
+// refs
+const startBtn = document.querySelector('button[data-start]');
+const inputEl = document.getElementById('datetime-picker');
+const daysEl = document.querySelector('span[data-days]');
+const hoursEl = document.querySelector('span[data-hours]');
+const minutesEl = document.querySelector('span[data-minutes]');
+const secondsEl = document.querySelector('span[data-seconds]');
 
-
-
-const currentTime = new Date();
-const userInput = document.querySelector('#datetime-picker');
-let UserSelectedDate = null;
-const startBtn = document.querySelector('.js-btn')
-
+// options flatpickr
 const options = {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    if (selectedDates[0] < currentTime) {
-      iziToast.error({
-        message: 'Please choose a date in the future',
-      })
+    userSelectedDate = selectedDates[0];
+    if (userSelectedDate.getTime() < currentDate) {
       startBtn.disabled = true;
+      iziToast.show({
+        message: 'Please choose a date in the future',
+        position: 'topRight',
+        backgroundColor: '#ef4040',
+        color: '#fff',
+      });
     } else {
-      UserSelectedDate = selectedDates[0];
-    
-      console.log(UserSelectedDate);
-      startBtn.disabled = false; 
+      startBtn.disabled = false;
     }
   },
 };
-flatpickr(userInput, options);
 
-
-
-
-const elements = {
-  days: document.querySelector(".js-days"),
-  hours: document.querySelector(".js-hours"),
-  minutes: document.querySelector(".js-minutes"),
-  seconds: document.querySelector(".js-seconds")
-}
+// functions
+// get time object
 function convertMs(ms) {
   // Number of milliseconds per unit of time
   const second = 1000;
@@ -64,32 +54,41 @@ function convertMs(ms) {
 
   return { days, hours, minutes, seconds };
 }
-
-
-startBtn.addEventListener('click', hadlerClick);
-function hadlerClick() {
-setInterval(() => {
-  if (UserSelectedDate) {
-    const currentTime = new Date();
-    const difference = UserSelectedDate - currentTime;
-  
-    if (difference <= 0) {
-      elements.days.textContent = '00';
-      elements.hours.textContent = '00';
-      elements.minutes.textContent = '00';
-      elements.seconds.textContent = '00';
+// difference current time and choosed future time
+function startCountTime() {
+  const timeDefference = userSelectedDate - currentDate;
+  let timeCounter = timeDefference;
+  const intervalID = setInterval(() => {
+    if (!timeCounter || timeCounter <= 1000) {
+      clearInterval(intervalID);
+      inputEl.disabled = false;
       return;
+    } else {
+      timeCounter -= 1000;
+      convertMs(timeCounter);
+      setTimeValueHTML(convertMs(timeCounter));
     }
+    startBtn.disabled = true;
+    inputEl.disabled = true;
 
-    const { days, hours, minutes, seconds } = convertMs(difference);
-
-    elements.days.textContent = String(days).padStart(2,'0');
-    elements.hours.textContent = String(hours).padStart(2, '0');
-    elements.minutes.textContent = String(minutes).padStart(2, '0');
-    elements.seconds.textContent = String(seconds).padStart(2, '0');
-
-  }
-}, 1000)
-  startBtn.disabled = true; 
-  userInput.disabled = true;
+    console.log(convertMs(timeCounter));
+  }, 1000);
 }
+// set markup values
+function setTimeValueHTML(obj) {
+  const { days, hours, minutes, seconds } = obj;
+  daysEl.innerHTML = String(days).padStart(2, '0');
+  hoursEl.innerHTML = String(hours).padStart(2, '0');
+  minutesEl.innerHTML = String(minutes).padStart(2, '0');
+  secondsEl.innerHTML = String(seconds).padStart(2, '0');
+}
+
+// start count time event
+startBtn.addEventListener('click', startCountTime);
+// choose date event
+flatpickr('#datetime-picker', options);
+// default set
+startBtn.disabled = true;
+inputEl.disabled = false;
+let userSelectedDate = null;
+const currentDate = new Date().getTime();
